@@ -8,9 +8,10 @@ import weightwatcher as ww
 from transformers import AutoModelForSequenceClassification
 
 
-def run_ww(model_name_or_path: str, out_dir: Path, tag: str):
+def run_ww(model_name_or_path: str, out_dir: Path, tag: str, base_model=None):
     model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
-    watcher = ww.WeightWatcher(model=model)
+    watcher = ww.WeightWatcher(model=model, base_model=base_model)
+    # base_model is None for the base run; populated for finetuned to get delta-aware diagnostics
     details = watcher.analyze()
     details_path = out_dir / f"details_{tag}.csv"
     details.to_csv(details_path, index=False)
@@ -29,9 +30,10 @@ def main():
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    base_model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
     base_summary = run_ww(args.model_name, out_dir, "base")
     if Path(args.ckpt).exists():
-        finetuned_summary = run_ww(args.ckpt, out_dir, "finetuned")
+        finetuned_summary = run_ww(args.ckpt, out_dir, "finetuned", base_model=base_model)
     else:
         finetuned_summary = None
 
