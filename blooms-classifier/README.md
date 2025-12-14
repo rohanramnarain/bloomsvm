@@ -14,6 +14,7 @@ This creates a venv, generates synthetic data, trains a TF-IDF SVM baseline, run
 - Blend of synthetic (Qwen2.5-0.5B-Instruct, 600 fast, `--require-llm`) plus pre-labeled seeds (`blooms_questions.{csv,jsonl}`), weak supervision, and dedupe (sim 0.97, len 12–320) → 951 rows, label-balanced (~194–207 each).
 - SVM (TF-IDF, linear): test macro-F1 ≈ 0.413 (`outputs/models/svm_latest`).
 - BERT fine-tune (6 epochs, batch 8, grad-accum 2): best test macro-F1 ≈ 0.347 at threshold 0.2 (`outputs/models/bert_finetuned`).
+- WeightWatcher (bert_finetuned vs. base): alpha ~4.121, alpha_weighted ~5.618, log_norm ~3.13249, stable_rank ~56.417 (outputs/ww).
 
 ## Setup
 
@@ -28,6 +29,7 @@ make setup  # install deps + spacy model
 - **Synthetic (default)**: `python -m src.acquisition.synth --models Qwen/Qwen2.5-0.5B-Instruct --n 600 --multilabel-p 0.35 --fast --require-llm`
   - Add `--fallback` to force template backend; omit `--require-llm` if you are okay with template fallback. Increase `--n` or swap to larger HF models when you have time.
 - **Seed blend (optional)**: place pre-labeled `blooms_questions.jsonl` in repo root; combine with synthetic before weak supervision (e.g., merge to `data/raw/combined.jsonl`, then run weak supervision + dedupe as usual).
+- **Seed provenance**: `blooms_questions.{csv,jsonl}` stems were derived from Johnson County CC Bloom stems PDF (https://blogs.jccc.edu/outcomesassessment/files/2018/02/Sample-Question-Stems-Using-Blooms.pdf). No permissive license is stated; treat as all rights reserved and restrict to internal evaluation/benchmarking (no redistribution).
 - **Scrape (respectful, may return zero)**: `python -m src.acquisition.scrape --max-pages 50 --sites https://oercommons.org https://open.umn.edu --allow-licenses cc-by,cc-by-sa --rate-limit 1.0`
 - **Weak supervision & cleaning**: `python -m src.acquisition.weak_supervision --in data/raw/*.jsonl --out data/interim/weak.jsonl` then `python -m src.acquisition.dedupe_clean --in data/interim/weak.jsonl --out data/processed/data.parquet`
 - **Audit & dataset card**: `python -m src.acquisition.audit`
@@ -75,6 +77,33 @@ python -m src.data.splits --input data/processed/data.parquet --out data/process
 
 - Scraper respects robots.txt and requires allowed licenses. If insufficient labeled data (<800), pipeline falls back to synthetic generation.
 - Synthetic generator logs model name, backend, and sample counts in `outputs/metrics/dataset_card.md`.
+- Project code is MIT-licensed (see LICENSE); ensure third-party assets comply before redistribution.
+- External model licenses (check HF model cards before deployment; as of Dec 2025 all list Apache-2.0, no non-commercial clauses, but re-verify for changes):
+  - TinyLlama/TinyLlama-1.1B-Chat-v0.6 — https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v0.6#license
+  - HuggingFaceTB/SmolLM2-1.7B-Instruct — https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct#license
+  - Qwen/Qwen2.5-0.5B-Instruct — https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct#license
+  - Qwen/Qwen2.5-0.5B — https://huggingface.co/Qwen/Qwen2.5-0.5B#license
+- Synthetic outputs: generated text uses the above open models under their licenses; our prompts and generated outputs are released under this repo's MIT license unless a model's terms add constraints—review before redistribution.
+- Seed questions attribution (internal use unless source license permits redistribution):
+  - Johnson County CC Bloom stems PDF: https://blogs.jccc.edu/outcomesassessment/files/2018/02/Sample-Question-Stems-Using-Blooms.pdf
+  - Reading Rockets Bloom questions PDF: https://www.readingrockets.org/sites/default/files/2023-09/Blooms%20Taxonomy%20questions.pdf
+  - Jason Johnston Bloom stems PDF: https://higherelearning.com/wp-content/uploads/2016/09/Blooms-Taxonomy-Question-Stems-Jason-Johnston.pdf
+  - ThoughtCo Bloom stems article: https://www.thoughtco.com/blooms-taxonomy-questions-7598
+  - TopHat Bloom stems article: https://tophat.com/blog/blooms-taxonomy-question-stems/
+
+## Dependency licenses
+
+Key runtime deps and licenses (verify before distribution):
+
+| Package | License |
+| --- | --- |
+| torch | BSD-style (as per PyTorch LICENSE) |
+| transformers | Apache-2.0 |
+| datasets | Apache-2.0 |
+| scikit-learn | BSD-3-Clause |
+| rapidfuzz | MIT |
+| weightwatcher | Apache-2.0 |
+| sentence-transformers | Apache-2.0 |
 
 ## Repro checklist (Charles-style)
 
