@@ -11,10 +11,9 @@ This creates a venv, generates synthetic data, trains a TF-IDF SVM baseline, run
 
 ## Latest run snapshot (Dec 2025)
 
-- Synthetic generation with HF chat models (TinyLlama-1.1B-Chat-v0.6, SmolLM2-1.7B-Instruct, Qwen2.5-0.5B-Instruct), `--require-llm` to forbid template fallback.
-- 600 raw → weak supervision → dedupe (sim 0.97, len 12–320) → 479 rows, balanced across Bloom labels (≈105–111 each).
-- SVM (TF-IDF, linear): test macro-F1 ≈ 0.428 (`outputs/models/svm_latest`).
-- BERT fine-tune (6 epochs, batch 8, grad-accum 2): best threshold on val ≈ 0.20, test macro-F1 ≈ 0.375 (`outputs/models/bert_finetuned`).
+- Blend of synthetic (Qwen2.5-0.5B-Instruct, 600 fast, `--require-llm`) plus pre-labeled seeds (`blooms_questions.{csv,jsonl}`), weak supervision, and dedupe (sim 0.97, len 12–320) → 951 rows, label-balanced (~194–207 each).
+- SVM (TF-IDF, linear): test macro-F1 ≈ 0.413 (`outputs/models/svm_latest`).
+- BERT fine-tune (6 epochs, batch 8, grad-accum 2): best test macro-F1 ≈ 0.347 at threshold 0.2 (`outputs/models/bert_finetuned`).
 
 ## Setup
 
@@ -26,8 +25,9 @@ make setup  # install deps + spacy model
 
 ## Data acquisition
 
-- **Synthetic (default)**: `python -m src.acquisition.synth --models TinyLlama/TinyLlama-1.1B-Chat-v0.6,HuggingFaceTB/SmolLM2-1.7B-Instruct,Qwen/Qwen2.5-0.5B-Instruct --n 600 --multilabel-p 0.35 --require-llm`
-  - Add `--fallback` to force template backend; omit `--require-llm` if you are okay with template fallback.
+- **Synthetic (default)**: `python -m src.acquisition.synth --models Qwen/Qwen2.5-0.5B-Instruct --n 600 --multilabel-p 0.35 --fast --require-llm`
+  - Add `--fallback` to force template backend; omit `--require-llm` if you are okay with template fallback. Increase `--n` or swap to larger HF models when you have time.
+- **Seed blend (optional)**: place pre-labeled `blooms_questions.jsonl` in repo root; combine with synthetic before weak supervision (e.g., merge to `data/raw/combined.jsonl`, then run weak supervision + dedupe as usual).
 - **Scrape (respectful, may return zero)**: `python -m src.acquisition.scrape --max-pages 50 --sites https://oercommons.org https://open.umn.edu --allow-licenses cc-by,cc-by-sa --rate-limit 1.0`
 - **Weak supervision & cleaning**: `python -m src.acquisition.weak_supervision --in data/raw/*.jsonl --out data/interim/weak.jsonl` then `python -m src.acquisition.dedupe_clean --in data/interim/weak.jsonl --out data/processed/data.parquet`
 - **Audit & dataset card**: `python -m src.acquisition.audit`
