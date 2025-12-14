@@ -1,0 +1,25 @@
+defaults:
+  seed: 42
+  device: auto
+  synthetic:
+    model: "qwen2.5:3b"
+    n: 600
+    multilabel_p: 0.25
+    domains: ["stem", "humanities", "social_sciences"]
+  scrape:
+    max_pages: 30
+    rate_limit: 1.0
+    allow_licenses: ["cc-by", "cc-by-sa", "cc0", "public-domain"]
+  split:
+    val: 0.1
+    test: 0.2
+  tfidf:
+    min_df: 2
+    word_ngram: [1, 2]
+    char_ngram: [3, 5]
+  bert:
+    model_name: "bert-base-uncased"
+    epochs: 3
+    batch_size: 8
+    grad_accum: 2
+    early_stop: 10
