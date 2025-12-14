@@ -13,8 +13,8 @@ This creates a venv, generates synthetic data, trains a TF-IDF SVM baseline, run
 
 - Blend of synthetic (Qwen2.5-0.5B-Instruct, 600 fast, `--require-llm`) plus pre-labeled seeds (`blooms_questions.{csv,jsonl}`), weak supervision, and dedupe (sim 0.97, len 12–320) → 951 rows, label-balanced (~194–207 each).
 - SVM (TF-IDF, linear): test macro-F1 ≈ 0.413 (`outputs/models/svm_latest`).
-- BERT fine-tune (6 epochs, batch 8, grad-accum 2): best test macro-F1 ≈ 0.347 at threshold 0.2 (`outputs/models/bert_finetuned`).
-- WeightWatcher (bert_finetuned vs. base): alpha ~4.121, alpha_weighted ~5.618, log_norm ~3.13249, stable_rank ~56.417 (outputs/ww).
+- BERT fine-tune (6 epochs, batch 8, grad-accum 2, layerwise LR decay 0.9, head LR ×2, warmup 0.1): best val macro-F1 ≈ 0.431 at threshold 0.2 (`outputs/models/bert_finetuned`).
+- WeightWatcher (delta-aware: base vs. finetuned): base alpha ~4.126, stable_rank ~56.40; finetuned residual alpha ~1.97, stable_rank ~5.39 (outputs/ww). Raw spectra are similar; rely on eval F1 for quality.
 
 ## Setup
 
